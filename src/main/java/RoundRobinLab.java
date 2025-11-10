@@ -6,6 +6,7 @@ public class RoundRobinLab {
         int id;
         int arrivalTime;
         int burstTime;
+
         int remainingTime;
         int completionTime;
         int turnaroundTime;
@@ -17,101 +18,78 @@ public class RoundRobinLab {
             this.burstTime = burstTime;
             this.remainingTime = burstTime;
         }
+
+        public Process(Process p) {
+            this.id = p.id;
+            this.arrivalTime = p.arrivalTime;
+            this.burstTime = p.burstTime;
+            this.remainingTime = p.remainingTime;
+            this.completionTime = p.completionTime;
+            this.turnaroundTime = p.turnaroundTime;
+            this.waitingTime = p.waitingTime;
+        }
     }
 
-    /**
-     * TODO 1, 2, 3: Implement Round Robin Scheduling
-     *
-     * This method simulates Round Robin scheduling with the given time quantum.
-     *
-     * TODO 1: Create the ready queue and scheduling loop
-     *   - Create an ArrayList to hold the ready queue
-     *   - Add all processes to the ready queue initially
-     *   - Create a loop that continues while the queue is not empty
-     *
-     * TODO 2: Process execution logic
-     *   - Remove the first process from the queue
-     *   - Calculate how much time this process will run (minimum of quantum and remaining time)
-     *   - Update currentTime by adding the execution time
-     *   - Subtract execution time from the process's remainingTime
-     *   - If remainingTime > 0, add process back to the end of the queue
-     *   - If remainingTime == 0, set the process completionTime to currentTime
-     *
-     * TODO 3: Calculate metrics after all processes complete
-     *   - Loop through all processes
-     *   - For each process: turnaroundTime = completionTime - arrivalTime
-     *   - For each process: waitingTime = turnaroundTime - burstTime
-     */
     public static void scheduleRoundRobin(List<Process> processes, int timeQuantum) {
         int currentTime = 0;
+        Deque<Process> ready = new ArrayDeque<>(processes);
 
-        // TODO 1: Create ready queue and add all processes
+        while (!ready.isEmpty()) {
+            Process p = ready.removeFirst();
 
+            int exec = Math.min(timeQuantum, p.remainingTime);
+            currentTime += exec;
+            p.remainingTime -= exec;
 
-        // TODO 2: Scheduling loop
-        // while (queue is not empty) {
-        //     - Remove first process
-        //     - Calculate execution time (min of quantum and remaining time)
-        //     - Update current time
-        //     - Decrease remaining time
-        //     - If not done, add back to queue
-        //     - If done, set completion time
-        // }
+            if (p.remainingTime > 0) {
+                ready.addLast(p);
+            } else {
+                p.completionTime = currentTime;
+            }
+        }
 
-
-        // TODO 3: Calculate turnaround and waiting times
-        // for each process:
-        //     turnaroundTime = completionTime - arrivalTime
-        //     waitingTime = turnaroundTime - burstTime
-
+        for (Process p : processes) {
+            p.turnaroundTime = p.completionTime - p.arrivalTime;
+            p.waitingTime = p.turnaroundTime - p.burstTime;
+        }
     }
 
-    /**
-     * Calculate and display metrics (FULLY PROVIDED)
-     */
-    public static void calculateMetrics(List<Process> processes, int timeQuantum) {
+    private static void printReport(String title, List<Process> procs, int timeQuantum) {
         System.out.println("========================================");
-        System.out.println("Round Robin Scheduling Simulator");
+        System.out.println(title);
         System.out.println("========================================\n");
         System.out.println("Time Quantum: " + timeQuantum + "ms");
         System.out.println("----------------------------------------");
         System.out.println("Process | Arrival | Burst | Completion | Turnaround | Waiting");
 
-        double totalTurnaround = 0;
-        double totalWaiting = 0;
-
-        for (Process p : processes) {
-            System.out.printf("   %d    |    %d    |   %d   |     %d     |     %d     |    %d\n",
-                    p.id, p.arrivalTime, p.burstTime, p.completionTime,
-                    p.turnaroundTime, p.waitingTime);
-            totalTurnaround += p.turnaroundTime;
-            totalWaiting += p.waitingTime;
+        double sumTAT = 0, sumWT = 0;
+        for (Process p : procs) {
+            sumTAT += p.turnaroundTime;
+            sumWT  += p.waitingTime;
+            System.out.printf("   %2d   |   %2d    |  %3d  |    %4d     |    %4d     |   %3d%n",
+                    p.id, p.arrivalTime, p.burstTime, p.completionTime, p.turnaroundTime, p.waitingTime);
         }
-
+        System.out.printf("Average Turnaround Time: %.2fms%n", sumTAT / procs.size());
+        System.out.printf("Average Waiting Time: %.2fms%n", sumWT / procs.size());
+        System.out.println("========================================");
         System.out.println();
-        System.out.printf("Average Turnaround Time: %.2fms\n", totalTurnaround / processes.size());
-        System.out.printf("Average Waiting Time: %.2fms\n", totalWaiting / processes.size());
-        System.out.println("========================================\n\n");
     }
 
-    /**
-     * Main method (FULLY PROVIDED)
-     */
     public static void main(String[] args) {
-        List<Process> processes1 = new ArrayList<>();
-        processes1.add(new Process(1, 0, 7));
-        processes1.add(new Process(2, 0, 4));
-        processes1.add(new Process(3, 0, 2));
+        List<Process> base = Arrays.asList(
+                new Process(1, 0, 7),
+                new Process(2, 0, 4),
+                new Process(3, 0, 2)
+        );
 
-        scheduleRoundRobin(processes1, 3);
-        calculateMetrics(processes1, 3);
+        List<Process> runQ3 = new ArrayList<>();
+        for (Process p : base) runQ3.add(new Process(p));
+        scheduleRoundRobin(runQ3, 3);
+        printReport("Round Robin Scheduling Simulator", runQ3, 3);
 
-        List<Process> processes2 = new ArrayList<>();
-        processes2.add(new Process(1, 0, 7));
-        processes2.add(new Process(2, 0, 4));
-        processes2.add(new Process(3, 0, 2));
-
-        scheduleRoundRobin(processes2, 5);
-        calculateMetrics(processes2, 5);
+        List<Process> runQ5 = new ArrayList<>();
+        for (Process p : base) runQ5.add(new Process(p));
+        scheduleRoundRobin(runQ5, 5);
+        printReport("Round Robin Scheduling Simulator", runQ5, 5);
     }
 }
